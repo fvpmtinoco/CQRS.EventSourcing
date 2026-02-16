@@ -1,10 +1,10 @@
 <Solution>
-  <Folder Name="/src/Post.Cmd/">
+  <Folder Name="/Post.Cmd/">
     <Project Path="src/Post.Cmd/Post.Cmd.Api/Post.Cmd.Api.csproj" />
 	<Project Path="src/Post.Cmd/Post.Cmd.Domain/Post.Cmd.Domain.csproj" />
     <Project Path="src/Post.Cmd/Post.Cmd.Infrastructure/Post.Cmd.Infrastructure.csproj" />
   </Folder>
-  <Folder Name="/src/Post.Query/">
+  <Folder Name="/Post.Query/">
     <Project Path="src/Post.Query/Post.Query.Api/Post.Query.Api.csproj" />
     <Project Path="src/Post.Query/Post.Query.Domain/Post.Query.Domain.csproj" />
     <Project Path="src/Post.Query/Post.Query.Infrastructure/Post.Query.Infrastructure.csproj" />
