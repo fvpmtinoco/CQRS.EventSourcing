@@ -9,6 +9,9 @@
     <Project Path="src/Post.Query/Post.Query.Domain/Post.Query.Domain.csproj" />
     <Project Path="src/Post.Query/Post.Query.Infrastructure/Post.Query.Infrastructure.csproj" />
   </Folder>
+  <Project Path="docker-compose.dcproj">
+    <Build />
+  </Project>
   <Project Path="src/CQRS.Core/CQRS.Core.csproj" />
   <Project Path="src/Post.Common/Post.Common.csproj" />
 </Solution>

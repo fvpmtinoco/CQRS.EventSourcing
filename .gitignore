@@ -55,3 +55,4 @@ nunit-*.xml
 .vs
 SM-POST
 src/Post.Query/Post.Query.Api/appsettings.Development.json
+src/Post.Cmd/Post.Cmd.Api/appsettings.Development.json

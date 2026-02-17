@@ -1,0 +1,6 @@
+services:
+  post-cmd-api:
+    image: ${DOCKER_REGISTRY-}postcmdapi
+    build:
+      context: .
+      dockerfile: src/Post.Cmd/Post.Cmd.Api/Dockerfile

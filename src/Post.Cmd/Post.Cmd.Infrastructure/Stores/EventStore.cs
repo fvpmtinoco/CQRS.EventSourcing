@@ -23,7 +23,7 @@ namespace Post.Cmd.Infrastructure.Stores
         {
             var eventStream = await eventStoreRepository.FindByAggregateIdAsync(aggregateId);
 
-            if (expectedVersion != -1 && eventStream[^1].Version != expectedVersion)
+            if (expectedVersion != -1 && eventStream.Count > 0 && eventStream[^1].Version != expectedVersion)
                 throw new ConcurrencyException();
 
             var version = expectedVersion;
