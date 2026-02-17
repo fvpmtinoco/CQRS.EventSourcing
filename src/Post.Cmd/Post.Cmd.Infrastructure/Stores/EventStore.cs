@@ -23,7 +23,7 @@ namespace Post.Cmd.Infrastructure.Stores
         {
             var eventStream = await eventStoreRepository.FindByAggregateIdAsync(aggregateId);
 
-            if (expectedVersion != -1 && eventStream.Count > 0 && eventStream[^1].Version != expectedVersion)
+            if (expectedVersion != 0 && eventStream[^1].Version != expectedVersion)
                 throw new ConcurrencyException();
 
             var version = expectedVersion;
@@ -45,6 +45,12 @@ namespace Post.Cmd.Infrastructure.Stores
                 await eventStoreRepository.SaveAsync(eventModel);
 
                 var topic = Environment.GetEnvironmentVariable("KAFKA_TOPIC");
+                if (string.IsNullOrWhiteSpace(topic))
+                {
+                    throw new InvalidOperationException(
+                        "Kafka Producer failed to start: The environment variable 'KAFKA_TOPIC' is missing or empty. " +
+                        "Check your docker-compose.yml environment section.");
+                }
                 await eventProducer.ProduceAsync(topic!, @event);
             }
         }
