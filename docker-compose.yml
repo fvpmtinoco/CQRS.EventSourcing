@@ -73,13 +73,15 @@ services:
         ports:
           - "1433:1433"
         restart: always
+        volumes:
+          - sqlserver_data_container:/data/sqlserver
 
 volumes:
-      zookeeper_data:
-        driver: local
       kafka_data:
         driver: local
       mongodb_data_container:
+        driver: local
+      sqlserver_data_container:
         driver: local
    
 networks:
