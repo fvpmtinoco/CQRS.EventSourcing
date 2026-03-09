@@ -54,6 +54,9 @@ services:
         # Delay before the broker starts rebalancing consumer groups on startup
         # Set to 0 for faster startup in dev environments
         KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+
+        # Allow topics to be created automatically when first produced/consumed
+        KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
       
     mongo-container:
         container_name: mongo-container
@@ -95,9 +98,30 @@ services:
           - mongo-container
           - kafka
 
+    post.query.api:
+        build:
+          context: .
+          dockerfile: src/Post.Query/Post.Query.Api/Dockerfile
+        container_name: post-query-api
+        environment:
+          - ASPNETCORE_ENVIRONMENT=Development
+          - ASPNETCORE_HTTP_PORTS=8080
+          - ASPNETCORE_HTTPS_PORTS=8081
+          - ConnectionStrings__SqlServer=Server=sqlserver,1433;Database=SocialMedia;User Id=sa;Password=Password123;TrustServerCertificate=true
+          - ConsumerConfig__BootstrapServers=kafka:29092
+          - ConsumerConfig__GroupId=SM_Consumer
+          - ConsumerConfig__EnableAutoCommit=false
+          - ConsumerConfig__AutoOffsetReset=Earliest
+          - ConsumerConfig__AllowAutoCreateTopics=true
+          - KAFKA_TOPIC=SocialMediaPostEvents
+        ports:
+          - "8060:8080"
+          - "8061:8081"
+        depends_on:
+          - sqlserver
+          - kafka
+
 volumes:
-      zookeeper_data:
-        driver: local
       kafka_data:
         driver: local
       mongodb_data_container:
@@ -108,3 +132,4 @@ networks:
         name: smpost
         external: true
     
+
