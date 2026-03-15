@@ -8,19 +8,21 @@ namespace Post.Cmd.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/[controller]")]
-public class AddCommentController(ILogger<AddCommentController> _logger, ICommandDispatcher _commandDispatcher) : ControllerBase
+public class RemoveCommentController(ICommandDispatcher commandDispatcher, ILogger<RemoveCommentController> logger) : ControllerBase
 {
-    [HttpPut("{id}")]
-    public async Task<ActionResult> AddCommentAsync(Guid id, AddCommentCommand command)
+    private readonly ICommandDispatcher _commandDispatcher = commandDispatcher;
+    private readonly ILogger<RemoveCommentController> _logger = logger;
+
+    [HttpDelete("{id}")]
+    public async Task<ActionResult> RemoveCommentAsync(Guid id, RemoveCommentCommand command)
     {
         command.Id = id;
         try
         {
             await _commandDispatcher.SendAsync(command);
-
-            return StatusCode(StatusCodes.Status201Created, new BaseResponse
+            return StatusCode(StatusCodes.Status200OK, new BaseResponse
             {
-                Message = "New comment creation request completed successfully."
+                Message = "Comment removal request completed successfully!"
             });
         }
         catch (InvalidOperationException ex)
@@ -41,9 +43,8 @@ public class AddCommentController(ILogger<AddCommentController> _logger, IComman
         }
         catch (Exception ex)
         {
-            const string SAFE_ERROR_MESSAGE = "Error while processing request to add a comment to a post";
+            const string SAFE_ERROR_MESSAGE = "Error while processing request to remove a comment from a post";
             _logger.LogError(ex, SAFE_ERROR_MESSAGE);
-
             return StatusCode(StatusCodes.Status500InternalServerError, new BaseResponse
             {
                 Message = SAFE_ERROR_MESSAGE
