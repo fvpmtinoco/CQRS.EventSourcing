@@ -76,7 +76,9 @@ services:
         ports:
           - "1433:1433"
         restart: always
-        
+        volumes:
+          - sqlserver_data_container:/var/opt/mssql
+
     post-cmd-api:
         build:
           context: .
@@ -125,6 +127,8 @@ volumes:
       kafka_data:
         driver: local
       mongodb_data_container:
+        driver: local
+      sqlserver_data_container:
         driver: local
    
 networks:

@@ -8,19 +8,22 @@ namespace Post.Cmd.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/[controller]")]
-public class AddCommentController(ILogger<AddCommentController> _logger, ICommandDispatcher _commandDispatcher) : ControllerBase
+public class EditCommentController(ICommandDispatcher commandDispatcher, ILogger<EditCommentController> logger) : ControllerBase
 {
+    private readonly ICommandDispatcher _commandDispatcher = commandDispatcher;
+    private readonly ILogger<EditCommentController> _logger = logger;
+
     [HttpPut("{id}")]
-    public async Task<ActionResult> AddCommentAsync(Guid id, AddCommentCommand command)
+    public async Task<ActionResult> EditCommentAsync(Guid id, EditCommentCommand command)
     {
         command.Id = id;
         try
         {
             await _commandDispatcher.SendAsync(command);
 
-            return StatusCode(StatusCodes.Status201Created, new BaseResponse
+            return StatusCode(StatusCodes.Status200OK, new BaseResponse
             {
-                Message = "New comment creation request completed successfully."
+                Message = "Edit comment request completed successfully."
             });
         }
         catch (InvalidOperationException ex)
@@ -41,7 +44,7 @@ public class AddCommentController(ILogger<AddCommentController> _logger, IComman
         }
         catch (Exception ex)
         {
-            const string SAFE_ERROR_MESSAGE = "Error while processing request to add a comment to a post";
+            const string SAFE_ERROR_MESSAGE = "Error while processing request to edit a comment on a post.";
             _logger.LogError(ex, SAFE_ERROR_MESSAGE);
 
             return StatusCode(StatusCodes.Status500InternalServerError, new BaseResponse

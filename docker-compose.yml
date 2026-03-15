@@ -74,7 +74,7 @@ services:
           - "1433:1433"
         restart: always
         volumes:
-          - sqlserver_data_container:/data/sqlserver
+          - sqlserver_data_container:/var/opt/mssql
 
 volumes:
       kafka_data:
