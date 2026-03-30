@@ -117,8 +117,8 @@ services:
           - ConsumerConfig__AllowAutoCreateTopics=true
           - KAFKA_TOPIC=SocialMediaPostEvents
         ports:
-          - "8060:8080"
-          - "8061:8081"
+          - "8070:8080"
+          - "8071:8081"
         depends_on:
           - sqlserver
           - kafka
