@@ -113,3 +113,20 @@ docker compose -f docker-compose.yml up -d
 - **Optimistic Concurrency** - The event store checks aggregate version before persisting, throwing `ConcurrencyException` on conflicts.
 - **Eventual Consistency** - The read model is updated asynchronously via Kafka. There is a brief lag between a command and its visibility on the query side.
 - **Aggregate Root** - `PostAggregate` encapsulates all business rules. State changes only happen through raised events, which are applied via reflection.
+- **Query Dispatcher** - The query side uses a dispatcher pattern (`IQueryDispatcher<T>`) that routes queries to their registered handlers. Each query type (e.g. `FindAllPostsQuery`, `FindPostByIdQuery`) has a corresponding handler method in `QueryHandler`, which delegates to the `IPostRepository` for data retrieval. Handlers are registered at startup via the `QueryHandlers` service extension, keeping the controller thin and the query logic decoupled.
+
+## Query Side Implementation
+
+The `PostLookupController` exposes the read API and delegates all work to the query dispatcher:
+
+```
+PostLookupController  →  IQueryDispatcher<PostEntity>  →  QueryHandler  →  IPostRepository  →  SQL Server
+```
+
+| Layer | Component | Responsibility |
+|-------|-----------|----------------|
+| API | `PostLookupController` | Receives HTTP requests, builds query objects, returns `PostLookupResponse` DTOs |
+| Queries | `FindAllPostsQuery`, `FindPostByIdQuery`, etc. | Simple query objects inheriting from `BaseQuery` |
+| Handlers | `QueryHandler` (implements `IQueryHandler`) | Contains the logic for each query, calls repository methods |
+| Dispatcher | `QueryDispatcher` (implements `IQueryDispatcher<PostEntity>`) | Routes query objects to the correct handler by type |
+| DI Setup | `QueryHandlers` extension | Registers all query handlers with the dispatcher at startup |

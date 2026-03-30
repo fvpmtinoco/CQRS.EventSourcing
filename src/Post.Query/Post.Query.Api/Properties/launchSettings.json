@@ -20,13 +20,15 @@
     },
     "Container (Dockerfile)": {
       "commandName": "Docker",
-      "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}",
+      "launchBrowser": true,
+      "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}/scalar/v1",
       "environmentVariables": {
-        "ASPNETCORE_HTTPS_PORTS": "8081",
-        "ASPNETCORE_HTTP_PORTS": "8080"
+        "ASPNETCORE_HTTPS_PORTS": "8061",
+        "ASPNETCORE_HTTP_PORTS": "8060"
       },
       "publishAllPorts": true,
-      "useSSL": true
+      "useSSL": true,
+      "dockerNetworkMode": "smpost"
     }
   },
   "$schema": "https://json.schemastore.org/launchsettings.json"
