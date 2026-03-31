@@ -2,20 +2,19 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
-namespace Post.Query.Domain.Entities
-{
-    [Table("Comment")]
-    public class CommentEntity
-    {
-        [Key]
-        public Guid CommentId { get; set; }
-        public string Username { get; set; }
-        public DateTime CommentDate { get; set; }
-        public string Comment { get; set; }
-        public bool Edited { get; set; }
-        public Guid PostId { get; set; }
+namespace Post.Query.Domain.Entities;
 
-        [JsonIgnore]
-        public virtual PostEntity Post { get; set; }
-    }
+[Table("Comment", Schema = "dbo")]
+public class CommentEntity
+{
+    [Key]
+    public Guid CommentId { get; set; }
+    public string Username { get; set; } = default!;
+    public DateTime CommentDate { get; set; }
+    public string Comment { get; set; } = default!;
+    public bool Edited { get; set; }
+    public Guid PostId { get; set; }
+
+    [JsonIgnore]
+    public virtual PostEntity Post { get; set; } = default!;
 }
