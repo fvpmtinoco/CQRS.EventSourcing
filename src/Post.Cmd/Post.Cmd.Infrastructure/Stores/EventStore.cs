@@ -5,54 +5,63 @@ using CQRS.Core.Infrastructure;
 using CQRS.Core.Producers;
 using Post.Cmd.Domain.Aggregates;
 
-namespace Post.Cmd.Infrastructure.Stores
+namespace Post.Cmd.Infrastructure.Stores;
+
+public class EventStore(IEventStoreRepository eventStoreRepository, IEventProducer eventProducer) : IEventStore
 {
-    public class EventStore(IEventStoreRepository eventStoreRepository, IEventProducer eventProducer) : IEventStore
+    public async Task<List<Guid>> GetAggregateIdsAsync()
     {
-        public async Task<List<BaseEvent>> GetEventsAsync(Guid aggregateId)
+        var eventStreams = await eventStoreRepository.FindAllAsync();
+
+        if (eventStreams is null || eventStreams.Count == 0)
+            throw new AggregateNotFoundException("No events found in the event store");
+
+        return [.. eventStreams.Select(x => x.AggregateIdentifier).Distinct()];
+    }
+
+    public async Task<List<BaseEvent>> GetEventsAsync(Guid aggregateId)
+    {
+        var eventStream = await eventStoreRepository.FindByAggregateIdAsync(aggregateId);
+
+        if (eventStream is null || eventStream.Count == 0)
+            throw new AggregateNotFoundException("Incorrect post ID provided");
+
+        return [.. eventStream.OrderBy(x => x.Version).Select(x => x.EventData)];
+    }
+
+    public async Task SaveEventsAsync(Guid aggregateId, IEnumerable<BaseEvent> events, int expectedVersion)
+    {
+        var eventStream = await eventStoreRepository.FindByAggregateIdAsync(aggregateId);
+
+        if (expectedVersion != 0 && eventStream[^1].Version != expectedVersion)
+            throw new ConcurrencyException();
+
+        var version = expectedVersion;
+        foreach (var @event in events)
         {
-            var eventStream = await eventStoreRepository.FindByAggregateIdAsync(aggregateId);
-
-            if (eventStream is null || eventStream.Count == 0)
-                throw new AggregateNotFoundException("Incorrect post ID provided");
-
-            return [.. eventStream.OrderBy(x => x.Version).Select(x => x.EventData)];
-        }
-
-        public async Task SaveEventsAsync(Guid aggregateId, IEnumerable<BaseEvent> events, int expectedVersion)
-        {
-            var eventStream = await eventStoreRepository.FindByAggregateIdAsync(aggregateId);
-
-            if (expectedVersion != 0 && eventStream[^1].Version != expectedVersion)
-                throw new ConcurrencyException();
-
-            var version = expectedVersion;
-            foreach (var @event in events)
+            version++;
+            @event.Version = version;
+            var eventType = @event.GetType().Name;
+            var eventModel = new EventModel
             {
-                version++;
-                @event.Version = version;
-                var eventType = @event.GetType().Name;
-                var eventModel = new EventModel
-                {
-                    Timestamp = DateTime.UtcNow,
-                    AggregateIdentifier = aggregateId,
-                    AggregateType = nameof(PostAggregate),
-                    Version = version,
-                    EventType = eventType,
-                    EventData = @event
-                };
+                Timestamp = DateTime.UtcNow,
+                AggregateIdentifier = aggregateId,
+                AggregateType = nameof(PostAggregate),
+                Version = version,
+                EventType = eventType,
+                EventData = @event
+            };
 
-                await eventStoreRepository.SaveAsync(eventModel);
+            await eventStoreRepository.SaveAsync(eventModel);
 
-                var topic = Environment.GetEnvironmentVariable("KAFKA_TOPIC");
-                if (string.IsNullOrWhiteSpace(topic))
-                {
-                    throw new InvalidOperationException(
-                        "Kafka Producer failed to start: The environment variable 'KAFKA_TOPIC' is missing or empty. " +
-                        "Check your docker-compose.yml environment section.");
-                }
-                await eventProducer.ProduceAsync(topic!, @event);
+            var topic = Environment.GetEnvironmentVariable("KAFKA_TOPIC");
+            if (string.IsNullOrWhiteSpace(topic))
+            {
+                throw new InvalidOperationException(
+                    "Kafka Producer failed to start: The environment variable 'KAFKA_TOPIC' is missing or empty. " +
+                    "Check your docker-compose.yml environment section.");
             }
+            await eventProducer.ProduceAsync(topic!, @event);
         }
     }
 }

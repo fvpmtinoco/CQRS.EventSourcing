@@ -1,6 +1,6 @@
 # CQRS.EventSourcing
 
-A proof-of-concept implementing **CQRS** (Command Query Responsibility Segregation) with **Event Sourcing** using .NET 10, Kafka, MongoDB and SQL Server.
+A proof-of-concept implementing **CQRS** (Command Query Responsibility Segregation) with **Event Sourcing** using .NET 10, Kafka, MongoDB, SQL Server and PostgreSQL.
 
 ## Architecture
 
@@ -17,8 +17,8 @@ A proof-of-concept implementing **CQRS** (Command Query Responsibility Segregati
                └──────┬──────┘     └──────▲──────┘
                       │                   │
                ┌──────▼──────┐     ┌──────┴──────┐
-               │   MongoDB   │     │  SQL Server │
-               │ Event Store │     │ Read Model  │
+               │   MongoDB   │     │ PostgreSQL/ │
+               │ Event Store │     │ SQL Server  │
                └──────┬──────┘     └──────▲──────┘
                       │                   │
                       │  ┌────────────┐   │
@@ -29,7 +29,7 @@ A proof-of-concept implementing **CQRS** (Command Query Responsibility Segregati
 
 **Write side** receives commands, validates them through the `PostAggregate`, persists domain events to MongoDB, and publishes them to Kafka.
 
-**Read side** consumes events from Kafka and projects them into a denormalized SQL Server model optimized for queries.
+**Read side** consumes events from Kafka and projects them into a denormalized read model (PostgreSQL or SQL Server) optimized for queries.
 
 ## Project Structure
 
@@ -53,7 +53,7 @@ src/
 |-----------------|-------------------------------------|
 | Runtime         | .NET 10                             |
 | Event Store     | MongoDB                             |
-| Read Database   | SQL Server 2022 Express             |
+| Read Database   | PostgreSQL / SQL Server 2022 Express |
 | Messaging       | Apache Kafka (KRaft mode)           |
 | ORM             | Entity Framework Core (query side)  |
 | API Docs        | OpenAPI + Scalar UI                 |
@@ -71,6 +71,7 @@ src/
 | `PUT`    | `/api/v1/editcomment/{id}`      | Edit a comment     |
 | `PUT`    | `/api/v1/removecomment/{id}`    | Remove a comment   |
 | `DELETE` | `/api/v1/deletepost/{id}`       | Delete a post      |
+| `POST`   | `/api/v1/restoredb`             | Restore read DB    |
 
 ### Query Side (port 8060)
 
@@ -97,15 +98,26 @@ API documentation is available at `/scalar/v1` on each service.
 docker compose up -d
 ```
 
-This starts Kafka, MongoDB, SQL Server, the Command API and the Query API. The Query API automatically creates the SQL Server database on first run.
+This starts Kafka, MongoDB, SQL Server, PostgreSQL, the Command API and the Query API. The Query API automatically creates the read database on first run.
 
 ### Infrastructure only
 
-To run just the infrastructure (Kafka, MongoDB, SQL Server) and develop locally:
+To run just the infrastructure (Kafka, MongoDB, SQL Server, PostgreSQL) and develop locally:
 
 ```bash
 docker compose -f docker-compose.yml up -d
 ```
+
+### Read database provider
+
+The Query API selects the database provider based on the `ASPNETCORE_ENVIRONMENT` variable:
+
+| Environment              | Provider   |
+|--------------------------|------------|
+| `Development`            | SQL Server |
+| `Development.PostgreSql` | PostgreSQL |
+
+The Docker Compose override defaults to PostgreSQL (`Development.PostgreSql`). When running locally you can switch by changing the environment variable and using the matching appsettings file.
 
 ## Key Patterns
 
@@ -113,6 +125,7 @@ docker compose -f docker-compose.yml up -d
 - **Optimistic Concurrency** - The event store checks aggregate version before persisting, throwing `ConcurrencyException` on conflicts.
 - **Eventual Consistency** - The read model is updated asynchronously via Kafka. There is a brief lag between a command and its visibility on the query side.
 - **Aggregate Root** - `PostAggregate` encapsulates all business rules. State changes only happen through raised events, which are applied via reflection.
+- **Restore Read DB** - The `RestoreDBController` exposes a `POST /api/v1/restoredb` endpoint that replays all events from the event store to rebuild the read database from scratch. This is useful when switching database providers or recovering from a corrupted read model.
 - **Query Dispatcher** - The query side uses a dispatcher pattern (`IQueryDispatcher<T>`) that routes queries to their registered handlers. Each query type (e.g. `FindAllPostsQuery`, `FindPostByIdQuery`) has a corresponding handler method in `QueryHandler`, which delegates to the `IPostRepository` for data retrieval. Handlers are registered at startup via the `QueryHandlers` service extension, keeping the controller thin and the query logic decoupled.
 
 ## Query Side Implementation
@@ -120,7 +133,7 @@ docker compose -f docker-compose.yml up -d
 The `PostLookupController` exposes the read API and delegates all work to the query dispatcher:
 
 ```
-PostLookupController  →  IQueryDispatcher<PostEntity>  →  QueryHandler  →  IPostRepository  →  SQL Server
+PostLookupController  →  IQueryDispatcher<PostEntity>  →  QueryHandler  →  IPostRepository  →  PostgreSQL/SQL Server
 ```
 
 | Layer | Component | Responsibility |

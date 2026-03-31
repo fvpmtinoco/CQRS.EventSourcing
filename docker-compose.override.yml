@@ -79,6 +79,17 @@ services:
         volumes:
           - sqlserver_data_container:/var/opt/mssql
 
+    postgres:
+        image: "postgres"
+        environment:
+          POSTGRES_PASSWORD: "postgres"
+        ports:
+          - "5444:5432"
+        restart: always
+        volumes:
+          - type: tmpfs
+            target: /dev/shm
+
     post-cmd-api:
         build:
           context: .
@@ -86,11 +97,11 @@ services:
         container_name: post-cmd-api
         ports:
           - "8080:8080"
-          - "8081:8081"
+          #- "8081:8081"
         environment:
           - ASPNETCORE_ENVIRONMENT=Development
           - ASPNETCORE_HTTP_PORTS=8080
-          - ASPNETCORE_HTTPS_PORTS=8081
+          #- ASPNETCORE_HTTPS_PORTS=8081
           - MongoDbConfig__ConnectionString=mongodb://mongo-container:27017
           - MongoDbConfig__Database=socialMedia
           - MongoDbConfig__Collection=eventStore
@@ -106,10 +117,11 @@ services:
           dockerfile: src/Post.Query/Post.Query.Api/Dockerfile
         container_name: post-query-api
         environment:
-          - ASPNETCORE_ENVIRONMENT=Development
+          - ASPNETCORE_ENVIRONMENT=Development.PostgreSql
           - ASPNETCORE_HTTP_PORTS=8080
-          - ASPNETCORE_HTTPS_PORTS=8081
-          - ConnectionStrings__SqlServer=Server=sqlserver,1433;Database=SocialMedia;User Id=sa;Password=Password123;TrustServerCertificate=true
+          #- ASPNETCORE_HTTPS_PORTS=8081
+          #- ConnectionStrings__SqlServer=Server=sqlserver,1433;Database=SocialMedia;User Id=sa;Password=Password123;TrustServerCertificate=true
+          - ConnectionStrings__SqlServer=Server=postgres;Database=postgres;User Id=postgres;Password=postgres;Port=5432;Trust Server Certificate=true
           - ConsumerConfig__BootstrapServers=kafka:29092
           - ConsumerConfig__GroupId=SM_Consumer
           - ConsumerConfig__EnableAutoCommit=false
@@ -118,9 +130,10 @@ services:
           - KAFKA_TOPIC=SocialMediaPostEvents
         ports:
           - "8070:8080"
-          - "8071:8081"
+          #- "8071:8081"
         depends_on:
           - sqlserver
+          - postgres 
           - kafka
 
 volumes:
@@ -129,6 +142,8 @@ volumes:
       mongodb_data_container:
         driver: local
       sqlserver_data_container:
+        driver: local
+      postgres_data_container:
         driver: local
    
 networks:

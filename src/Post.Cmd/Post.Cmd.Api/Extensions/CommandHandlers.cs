@@ -2,23 +2,23 @@
 using Post.Cmd.Api.Commands;
 using Post.Cmd.Infrastructure.Dispatchers;
 
-namespace Post.Cmd.Api.Extensions
-{
-    public static class CommandHandlers
-    {
-        public static void RegisterCommandHandlers(this IServiceCollection services)
-        {
-            var commandHandler = services.BuildServiceProvider().GetService<ICommandHandler>();
-            var dispatcher = new CommandDispatcher();
-            dispatcher.RegisterHandler<NewPostCommand>(commandHandler!.HandleAsync);
-            dispatcher.RegisterHandler<AddCommentCommand>(commandHandler!.HandleAsync);
-            dispatcher.RegisterHandler<DeletePostCommand>(commandHandler!.HandleAsync);
-            dispatcher.RegisterHandler<EditCommentCommand>(commandHandler!.HandleAsync);
-            dispatcher.RegisterHandler<EditMessageCommand>(commandHandler!.HandleAsync);
-            dispatcher.RegisterHandler<LikePostCommand>(commandHandler!.HandleAsync);
-            dispatcher.RegisterHandler<RemoveCommentCommand>(commandHandler!.HandleAsync);
+namespace Post.Cmd.Api.Extensions;
 
-            services.AddSingleton<ICommandDispatcher>(_ => dispatcher);
-        }
+public static class CommandHandlers
+{
+    public static void RegisterCommandHandlers(this IServiceCollection services)
+    {
+        var commandHandler = services.BuildServiceProvider().GetService<ICommandHandler>();
+        var dispatcher = new CommandDispatcher();
+        dispatcher.RegisterHandler<NewPostCommand>(commandHandler!.HandleAsync);
+        dispatcher.RegisterHandler<AddCommentCommand>(commandHandler!.HandleAsync);
+        dispatcher.RegisterHandler<DeletePostCommand>(commandHandler!.HandleAsync);
+        dispatcher.RegisterHandler<EditCommentCommand>(commandHandler!.HandleAsync);
+        dispatcher.RegisterHandler<EditMessageCommand>(commandHandler!.HandleAsync);
+        dispatcher.RegisterHandler<LikePostCommand>(commandHandler!.HandleAsync);
+        dispatcher.RegisterHandler<RemoveCommentCommand>(commandHandler!.HandleAsync);
+        dispatcher.RegisterHandler<RestoreDBCommand>(commandHandler!.HandleAsync);
+
+        services.AddSingleton<ICommandDispatcher>(_ => dispatcher);
     }
 }
